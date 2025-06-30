@@ -1,0 +1,55 @@
+# Requiere el dump de mono-sql:
+services:
+  worker_ushuaia:
+    image: citusdata/citus:13  # Usa la misma versión que el coordinador
+    container_name: citus-worker-ushuaia
+    environment:
+      POSTGRES_PASSWORD: admin
+    # Definición de un healthcheck en el worker para que Docker considere "saludable" el nodo sólo cuando el Postgre dentro esté listo para conexiones, el coordinador debe depender también de esta condición:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - red_untdf
+    
+  worker_riogrande:
+    image: citusdata/citus:13
+    container_name: citus-worker-riogrande
+    environment:
+      POSTGRES_PASSWORD: admin
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - red_untdf
+
+  coordinator:
+    image: citusdata/citus:13
+    container_name: citus-coordinator
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: admin
+      CITUS_WORKER_NODES: "citus-worker-ushuaia:5432,citus-worker-riogrande:5432" # Si levantamos un sólo worker, va uno sólo de los parámetros
+    volumes:
+      - ./01_ddl.sql:/docker-entrypoint-initdb.d/01_ddl.sql
+      - ./02_dml.sql:/docker-entrypoint-initdb.d/02_dml.sql
+    # Definición para espera de los workers
+    depends_on:
+      worker_ushuaia:
+        condition: service_healthy
+      worker_riogrande:
+        condition: service_healthy
+    networks:
+      - red_untdf
+
+networks:
+  red_untdf:
+    driver: bridge
+
+# Para poder probar el coordinador:
+# docker run -it --network coord-sql_red_untdf --rm postgres:latest psql -h citus-coordinator -U postgres

@@ -1,0 +1,26 @@
+# ¡Leer hasta el final!
+services:
+  monolitica-db:
+    image: postgres:latest
+    container_name: postgres-monolitica
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: monolitica
+    volumes:
+      - .:/docker-entrypoint-initdb.d
+    ports:
+      - "5433:5432"
+    networks:
+      - red_ushuaia
+
+networks:
+  red_ushuaia:
+    driver: bridge
+
+# Para conectarnos como clientes (y probar querys):
+# docker run --rm -it --network=mono-sql_red_ushuaia postgres psql -h monolitica-db -U postgres -d monolitica
+
+# IMPORTANTE: una vez que vimos que andubo todo OK, debemos hacer el dump de la BD, CREAR EL DIRECTORIO coord-sql/02_dml.sql ANTES (VACÍO).
+# docker exec -t postgres-monolitica pg_dump -U postgres -d monolitica --data-only --inserts --column-inserts > ../coord-sql/02_dml.sql
+
