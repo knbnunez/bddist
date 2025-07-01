@@ -8,6 +8,7 @@ CREATE TABLE Clasificaciones (
     max_salario DECIMAL(10, 2) CHECK (max_salario >= 0)
 );
 SELECT create_reference_table('Clasificaciones');
+CREATE INDEX idx_clasificaciones_categoria ON Clasificaciones(categoria);
 
 CREATE TABLE Pluses_Hijo (
     id SERIAL PRIMARY KEY,
@@ -15,6 +16,7 @@ CREATE TABLE Pluses_Hijo (
     importe DECIMAL(10, 2) NOT NULL CHECK (importe >= 0)
 );
 SELECT create_reference_table('Pluses_Hijo');
+CREATE INDEX idx_pluses_hijo_descripcion ON Pluses_Hijo(descripcion);
 
 CREATE TABLE Titulaciones (
     id INTEGER,
@@ -25,6 +27,7 @@ CREATE TABLE Titulaciones (
     PRIMARY KEY(id, campus) -- Para que no se repita el ID dentro de un mismo campus
 );
 SELECT create_distributed_table('Titulaciones', 'campus');
+CREATE INDEX idx_titulaciones_nombre ON Titulaciones(nombre);
 
 CREATE TABLE Cursos (
     id INTEGER,
@@ -35,6 +38,7 @@ CREATE TABLE Cursos (
     FOREIGN KEY (titulacion, campus) REFERENCES Titulaciones(id, campus) -- Son restricciones de CITUS
 );
 SELECT create_distributed_table('Cursos', 'campus');
+CREATE INDEX idx_cursos_titulacion ON Cursos(titulacion); -- Para los joins
 
 CREATE TABLE Grupos (
     id INTEGER,
@@ -45,6 +49,7 @@ CREATE TABLE Grupos (
     FOREIGN KEY (curso, campus) REFERENCES Cursos(id, campus)
 );
 SELECT create_distributed_table('Grupos', 'campus');
+CREATE INDEX idx_grupos_curso ON Grupos(curso); -- Para los joins
 
 CREATE TABLE Asignaturas (
     id INTEGER,
@@ -56,6 +61,8 @@ CREATE TABLE Asignaturas (
     FOREIGN KEY (curso, campus) REFERENCES Cursos(id, campus)
 );
 SELECT create_distributed_table('Asignaturas', 'campus');
+CREATE INDEX idx_asignaturas_nombre ON Asignaturas(nombre_asig);
+CREATE INDEX idx_asignaturas_curso ON Asignaturas(curso);
 
 CREATE TABLE Profesores (
     id INTEGER,
@@ -77,6 +84,7 @@ CREATE TABLE Profesores (
     PRIMARY KEY(id, campus)
 );
 SELECT create_distributed_table('Profesores', 'campus');
+CREATE INDEX idx_profesores_nombre ON Profesores(nombre);
 
 CREATE TABLE Imparte (
     id INTEGER,
@@ -89,3 +97,5 @@ CREATE TABLE Imparte (
     FOREIGN KEY (asignatura, campus) REFERENCES Asignaturas(id, campus)
 );
 SELECT create_distributed_table('Imparte', 'campus');
+CREATE INDEX idx_imparte_profesor ON Imparte(profesor);
+CREATE INDEX idx_imparte_asignatura ON Imparte(asignatura);
